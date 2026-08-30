@@ -1,0 +1,214 @@
+.gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.gallery__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.gallery__title {
+  margin: 0;
+  font-size: 40px;
+}
+
+.gallery__new {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-weight: 600;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.gallery__new:hover {
+  background: var(--color-accent-hover);
+  color: var(--color-bg);
+}
+
+.gallery__new:active {
+  background: var(--color-accent-active);
+}
+
+.gallery__toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.gallery__search {
+  width: 100%;
+  max-width: 480px;
+}
+
+.gallery__search-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 14px;
+  background: #12100c;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+}
+
+.gallery__search-input::placeholder {
+  color: var(--color-muted);
+}
+
+.gallery__search-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.22);
+}
+
+.gallery__filters {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  min-height: 32px;
+  padding: 6px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-muted);
+  font-family: var(--font-body);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.filter-chip:hover {
+  border-color: var(--color-accent);
+}
+
+.filter-chip--active {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border-color: var(--color-accent);
+  font-weight: 600;
+}
+
+.gallery__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.gallery-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2);
+  text-decoration: none;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.gallery-card:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.gallery-card__image {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface-elevated);
+}
+
+.gallery-card__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 40px;
+  color: var(--color-muted);
+}
+
+.gallery-card__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gallery-card__body {
+  padding: var(--space-2) 0 0;
+}
+
+.gallery-card__name {
+  margin: 0;
+  font-size: 20px;
+  color: var(--color-fg);
+}
+
+.gallery-card__category {
+  margin: var(--space-0) 0 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+}
+
+.gallery__loading {
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.gallery__error {
+  background: rgba(224, 102, 102, 0.12);
+  border: 1px solid var(--color-danger);
+  color: var(--color-fg);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+}
+
+.gallery-empty {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+
+.gallery-empty__title {
+  margin: 0;
+  font-size: 28px;
+  color: var(--color-fg);
+}
+
+.gallery-empty__text {
+  margin: var(--space-2) 0 var(--space-4);
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.gallery-empty .gallery__new {
+  display: inline-flex;
+}
