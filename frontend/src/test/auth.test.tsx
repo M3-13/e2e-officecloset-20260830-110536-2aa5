@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AUTH_TOKEN_KEY } from "../constants";
@@ -176,6 +176,42 @@ describe("UserMenu", () => {
       expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBeNull();
     });
     expect(mockedApi.logout).toHaveBeenCalled();
+    expect(await screen.findByText("Login-Seite")).toBeInTheDocument();
+  });
+
+  it("wartet auf den Logout-Request, bevor Token gelöscht und umgeleitet wird", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "tok-123");
+    mockedApi.fetchMe.mockResolvedValue({ id: 1, email: "anna@example.com" });
+
+    let resolveLogout!: () => void;
+    const logoutRequest = new Promise<void>((resolve) => {
+      resolveLogout = resolve;
+    });
+    mockedApi.logout.mockReturnValue(logoutRequest);
+
+    render(
+      <MemoryRouter initialEntries={["/wardrobe"]}>
+        <Routes>
+          <Route path="/wardrobe" element={<UserMenu />} />
+          <Route path="/login" element={<div>Login-Seite</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("anna@example.com")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /Abmelden/i }));
+
+    expect(mockedApi.logout).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBe("tok-123");
+    expect(screen.getByText("anna@example.com")).toBeInTheDocument();
+    expect(screen.queryByText("Login-Seite")).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveLogout();
+    });
+
+    expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBeNull();
     expect(await screen.findByText("Login-Seite")).toBeInTheDocument();
   });
 });
