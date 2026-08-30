@@ -1,10 +1,21 @@
-import { Link } from "react-router-dom";
-import { AUTH_TOKEN_KEY } from "../constants";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
+import "../styles/auth.css";
 
 export function UserMenu() {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  const { user, status, logout } = useAuth();
+  const navigate = useNavigate();
 
-  if (!token) {
+  async function handleLogout(): Promise<void> {
+    await logout();
+    navigate("/login", { replace: true });
+  }
+
+  if (status === "loading") {
+    return null;
+  }
+
+  if (!user) {
     return (
       <Link to="/login" className="user-menu__login">
         Anmelden
@@ -13,9 +24,19 @@ export function UserMenu() {
   }
 
   return (
-    <button type="button" className="user-menu__button" aria-label="Benutzermenü">
-      <span className="user-menu__avatar" aria-hidden="true" />
-      <span className="sr-only">Benutzermenü</span>
-    </button>
+    <div className="user-menu">
+      <span className="user-menu__email" title={user.email}>
+        {user.email}
+      </span>
+      <button
+        type="button"
+        className="auth-button auth-button--secondary user-menu__logout"
+        onClick={handleLogout}
+      >
+        Abmelden
+      </button>
+    </div>
   );
 }
+
+export default UserMenu;
