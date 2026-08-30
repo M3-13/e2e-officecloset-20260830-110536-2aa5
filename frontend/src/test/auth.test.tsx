@@ -218,7 +218,7 @@ describe("UserMenu", () => {
 });
 
 describe("logout (API)", () => {
-  it("setzt den Logout-Request mit keepalive und Authorization-Header ab", async () => {
+  it("setzt den Logout-Request OHNE keepalive und mit Authorization-Header ab", async () => {
     const actualAuth = await vi.importActual<typeof authApi>("../api/auth");
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
     vi.stubGlobal("fetch", fetchMock);
@@ -233,7 +233,7 @@ describe("logout (API)", () => {
     ];
     expect(url).toContain("/api/auth/logout");
     expect(options.method).toBe("POST");
-    expect(options.keepalive).toBe(true);
+    expect(options.keepalive).toBeUndefined();
     expect(options.headers.get("Authorization")).toBe("Bearer tok-123");
   });
 
@@ -251,12 +251,12 @@ describe("logout (API)", () => {
     expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBe("tok-123");
   });
 
-  it("leert Token und State erst nach Auflösung des keepalive-Requests", async () => {
+  it("leert Token und State erst nach Auflösung des Fetch (OHNE keepalive)", async () => {
     const actualAuth = await vi.importActual<typeof authApi>("../api/auth");
 
     let resolveFetch!: () => void;
     const fetchMock = vi.fn(
-      () =>
+      (_url: string, _options: RequestInit) =>
         new Promise<Response>((resolve) => {
           resolveFetch = () => resolve(new Response(null, { status: 204 }));
         }),
@@ -288,8 +288,13 @@ describe("logout (API)", () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/api/auth/logout"),
-      expect.objectContaining({ method: "POST", keepalive: true }),
+      expect.objectContaining({ method: "POST" }),
     );
+    const [, options] = fetchMock.mock.calls[0] as [
+      string,
+      RequestInit & { headers: Headers },
+    ];
+    expect(options.keepalive).toBeUndefined();
     expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBe("tok-123");
 
     await act(async () => {

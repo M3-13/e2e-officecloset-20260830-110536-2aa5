@@ -65,15 +65,21 @@ export async function logout(): Promise<void> {
   }
 
   try {
-    // Direkter Fetch mit keepalive: der Request überlebt eine Navigation /
-    // einen Seitenwechsel und wird nicht als net::ERR_ABORTED abgebrochen.
-    // Ein 401/Fehler wird NICHT als Hard-Redirect behandelt, sondern nur lokal
-    // abgefangen, damit der lokale Logout immer sauber durchläuft.
-    await fetch(`${API_BASE_URL}/api/auth/logout`, {
+    // Normaler Fetch OHNE keepalive: keepalive weist den Browser an, die
+    // Antwort zu verwerfen und die Verbindung beim Seitenwechsel abzubrechen,
+    // wodurch `await fetch(...)` auflöst, bevor die 204-Antwort verarbeitet
+    // ist. Ohne keepalive wird die Antwort vollständig abgewartet.
+    const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
       method: "POST",
       headers,
-      keepalive: true,
     });
+
+    // Response-Status prüfen: 204/erfolgreich ist ok. Ein Fehler wird nur
+    // lokal abgefangen (KEIN Hard-Redirect via window.location), damit der
+    // lokale Logout immer sauber durchläuft.
+    if (!response.ok) {
+      throw await toApiError(response);
+    }
   } catch {
     // Fehler beim Logout lokal abfangen: die lokale Sitzung wird trotzdem beendet.
   }
