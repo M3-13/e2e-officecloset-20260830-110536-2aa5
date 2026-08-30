@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AUTH_TOKEN_KEY } from "../constants";
 import { ApiError } from "../api/client";
-import { resetAuthForTests } from "../auth/AuthContext";
+import { resetAuthForTests, useAuth } from "../auth/AuthContext";
 import { UserMenu } from "../components/UserMenu";
 import { LoginPage } from "../pages/LoginPage";
 import { RegisterPage } from "../pages/RegisterPage";
@@ -23,6 +23,7 @@ beforeEach(() => {
   localStorage.clear();
   resetAuthForTests();
   vi.resetAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("LoginPage", () => {
@@ -213,5 +214,91 @@ describe("UserMenu", () => {
 
     expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBeNull();
     expect(await screen.findByText("Login-Seite")).toBeInTheDocument();
+  });
+});
+
+describe("logout (API)", () => {
+  it("setzt den Logout-Request mit keepalive und Authorization-Header ab", async () => {
+    const actualAuth = await vi.importActual<typeof authApi>("../api/auth");
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    localStorage.setItem(AUTH_TOKEN_KEY, "tok-123");
+
+    await actualAuth.logout();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, options] = fetchMock.mock.calls[0] as [
+      string,
+      RequestInit & { headers: Headers },
+    ];
+    expect(url).toContain("/api/auth/logout");
+    expect(options.method).toBe("POST");
+    expect(options.keepalive).toBe(true);
+    expect(options.headers.get("Authorization")).toBe("Bearer tok-123");
+  });
+
+  it("wirft bei einem 401 nicht und lässt den lokalen Token unangetastet", async () => {
+    const actualAuth = await vi.importActual<typeof authApi>("../api/auth");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ detail: "Nicht autorisiert" }), { status: 401 }),
+      ),
+    );
+    localStorage.setItem(AUTH_TOKEN_KEY, "tok-123");
+
+    await expect(actualAuth.logout()).resolves.toBeUndefined();
+    expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBe("tok-123");
+  });
+
+  it("leert Token und State erst nach Auflösung des keepalive-Requests", async () => {
+    const actualAuth = await vi.importActual<typeof authApi>("../api/auth");
+
+    let resolveFetch!: () => void;
+    const fetchMock = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveFetch = () => resolve(new Response(null, { status: 204 }));
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    mockedApi.logout.mockImplementation(() => actualAuth.logout());
+    mockedApi.fetchMe.mockResolvedValue({ id: 1, email: "anna@example.com" });
+    localStorage.setItem(AUTH_TOKEN_KEY, "tok-123");
+
+    function Harness() {
+      const { user, logout } = useAuth();
+      return (
+        <button type="button" onClick={() => void logout()}>
+          {user ? user.email : "anonymous"}
+        </button>
+      );
+    }
+
+    render(
+      <MemoryRouter>
+        <Harness />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("anna@example.com")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button"));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/auth/logout"),
+      expect.objectContaining({ method: "POST", keepalive: true }),
+    );
+    expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBe("tok-123");
+
+    await act(async () => {
+      resolveFetch();
+    });
+
+    await waitFor(() => {
+      expect(localStorage.getItem(AUTH_TOKEN_KEY)).toBeNull();
+    });
+    expect(screen.getByText("anonymous")).toBeInTheDocument();
   });
 });

@@ -1,4 +1,5 @@
 import { ApiError, apiFetch } from "./client";
+import { AUTH_TOKEN_KEY } from "../constants";
 
 const API_BASE_URL: string =
   (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000";
@@ -57,7 +58,25 @@ export async function login(email: string, password: string): Promise<AuthRespon
 }
 
 export async function logout(): Promise<void> {
-  await apiFetch<void>("/api/auth/logout", { method: "POST" });
+  const headers = new Headers();
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  try {
+    // Direkter Fetch mit keepalive: der Request überlebt eine Navigation /
+    // einen Seitenwechsel und wird nicht als net::ERR_ABORTED abgebrochen.
+    // Ein 401/Fehler wird NICHT als Hard-Redirect behandelt, sondern nur lokal
+    // abgefangen, damit der lokale Logout immer sauber durchläuft.
+    await fetch(`${API_BASE_URL}/api/auth/logout`, {
+      method: "POST",
+      headers,
+      keepalive: true,
+    });
+  } catch {
+    // Fehler beim Logout lokal abfangen: die lokale Sitzung wird trotzdem beendet.
+  }
 }
 
 export async function fetchMe(): Promise<AuthUser> {
